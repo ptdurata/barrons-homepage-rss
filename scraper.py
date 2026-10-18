@@ -112,7 +112,14 @@ def robots_allows(session: requests.Session, url: str) -> bool:
         return True
     parser = RobotFileParser()
     parser.parse(resp.text.splitlines())
-    return parser.can_fetch(USER_AGENT, url)
+    allowed = parser.can_fetch(USER_AGENT, url)
+    log.info("robots.txt HTTP %s, %d bytes; homepage allowed: %s", resp.status_code, len(resp.text), allowed)
+    if not allowed:
+        # Show the public rules that matched, so a refusal can be checked by hand.
+        for line in resp.text.splitlines()[:400]:
+            if re.match(r"\s*(user-agent|allow|disallow)\s*:", line, re.I):
+                log.info("robots.txt: %s", line.strip())
+    return allowed
 
 
 def fetch_homepage(session: requests.Session) -> str:
