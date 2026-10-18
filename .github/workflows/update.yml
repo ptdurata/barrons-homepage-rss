@@ -1,0 +1,50 @@
+name: Update Barron's feed
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+# Only needed to commit barrons.xml back to main.
+permissions:
+  contents: write
+
+concurrency:
+  group: update-feed
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run offline tests
+        run: python -m pytest -q
+
+      # Exits non-zero (and the job stops here, with no commit) on network errors,
+      # non-200 responses, anti-bot pages, robots.txt disallow, or too few articles.
+      - name: Scrape homepage and build feed
+        run: python scraper.py --output barrons.xml
+
+      - name: Commit feed if it changed
+        run: |
+          if git diff --quiet -- barrons.xml && git ls-files --error-unmatch barrons.xml >/dev/null 2>&1; then
+            echo "barrons.xml unchanged; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add barrons.xml
+          git commit -m "Update barrons.xml ($(date -u +%Y-%m-%dT%H:%MZ))"
+          git pull --rebase origin main
+          git push origin HEAD:main
