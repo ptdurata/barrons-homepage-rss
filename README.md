@@ -2,8 +2,10 @@
 
 **Feed URL:** https://ptdurata.github.io/barrons-homepage-rss/barrons.xml
 
-> **Status:** not yet verified live. The feed URL above becomes valid only after
-> the first successful workflow run with GitHub Pages enabled. See
+> **Status: BLOCKED by robots.txt (2026-10-18). No feed is published.**
+> Barron's `robots.txt` disallows the whole site for every crawler that isn't
+> on its allowlist, including this one. The scraper honors that, so it has
+> never fetched the homepage, and the hourly schedule is switched off. See
 > [Verification status](#verification-status).
 
 An unofficial RSS 2.0 feed of the headlines and links shown on the public
@@ -147,7 +149,38 @@ For a third-party check, paste the feed URL into the
 
 ## Verification status
 
-_To be filled in after the first verified live run._
+Two manual runs on 2026-10-18 from GitHub-hosted runners
+([run 1](https://github.com/ptdurata/barrons-homepage-rss/actions/runs/39148631096),
+[run 2](https://github.com/ptdurata/barrons-homepage-rss/actions/runs/39148772241))
+both stopped at the robots.txt check, before the homepage was requested:
+
+```
+INFO robots.txt HTTP 200, 3585 bytes; homepage allowed: False
+INFO robots.txt: User-agent: *
+INFO robots.txt: Disallow: /
+INFO robots.txt: User-agent: googlebot
+...  (about 80 named crawlers: search engines, social link previews, SEO and monitoring tools)
+INFO robots.txt: Allow: /
+...
+ERROR robots.txt disallows the homepage for this User-Agent
+```
+
+`https://www.barrons.com/robots.txt` is an **allowlist**. The `*` group
+disallows `/`, and only the named user agents get `Allow: /`. The only way
+past it is to claim to be one of the listed crawlers. That's User-Agent
+spoofing, which this project rules out, so:
+
+- `barrons.xml` has never been generated, and the feed URL returns 404.
+- The homepage structure (raw HTML vs. `__NEXT_DATA__` vs. GraphQL) could not
+  be inspected, because doing so would itself break the robots.txt rule. The
+  parser's multi-source extraction is tested only against synthetic fixtures.
+- The hourly `schedule` trigger is commented out in
+  `.github/workflows/update.yml` so the job doesn't fail every hour. Manual
+  runs still work and will still refuse while the rule is in place.
+
+To revive the project, Barron's would need to allow this User-Agent (or all
+agents) in robots.txt, or give explicit permission. Then re-enable the
+`schedule` block and run the workflow manually to verify.
 
 ## Files
 

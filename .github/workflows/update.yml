@@ -1,8 +1,10 @@
 name: Update Barron's feed
 
 on:
-  schedule:
-    - cron: "0 * * * *"
+  # Hourly schedule disabled: barrons.com/robots.txt disallows all crawlers not on
+  # its allowlist (see README "Verification status"). Uncomment to re-enable.
+  # schedule:
+  #   - cron: "0 * * * *"
   workflow_dispatch:
 
 # Only needed to commit barrons.xml back to main.
